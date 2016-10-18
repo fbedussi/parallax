@@ -1,0 +1,23 @@
+.wrapper {
+	max-width: 700px;
+}
+
+section {
+	margin-bottom: 200px;
+}
+
+.imgLeft img {
+	float: left;
+}
+
+.imgLeft p {
+	padding-left: 420px
+}
+
+.imgRight img {
+	float: right;
+}
+
+.imgRight p {
+	padding-right: 420px;
+}
