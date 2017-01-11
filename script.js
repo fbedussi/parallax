@@ -4,35 +4,41 @@ var Parallax = {
 	},
 
 	_adjustInitialOffset: function() {
-		var maxScroll = document.body.clientHeight - this._el.offsetTop - this._initialOffset;
+		//Reduce initialOffset if the element is too close to the document end
+		var maxScroll = document.body.clientHeight - this._el.offsetTop - this._initialOffset - this._el.clientHeight;
 		if (maxScroll < window.innerHeight) {
-			console.log('initial offset ', this._initialOffset);
-			this._initialOffset = Math.max(0, this._initialOffset * maxScroll / window.innerHeight);
-			console.log('new initial offset ', this._initialOffset);
+			this._initialOffset = Math.max(0, Math.floor(this._initialOffset * maxScroll / window.innerHeight));
 		}
 	},
 
-	_translate: function(y) {
+	_applyTranslate: function(y) {
 		this._el.style.transform = `translateY(${y}px)`;
+	},
+	
+	_managePosition: function() {
+		var elCoord = this._getMeasures();
+		
+		if (elCoord.top < 0) {
+			return;
+		}
+		
+		if (elCoord.top > window.innerHeight) {
+			this._applyTranslate(this._initialOffset);
+			return;
+		}
+		
+		//if (elCoord.top >= 0 && elCoord.top <= window.innerHeight) 
+		var newOffset = Math.floor(this._initialOffset * elCoord.top / (window.innerHeight - this._initialOffset));
+		this._applyTranslate(Math.max(0, Math.min(this._initialOffset, newOffset)));
 	},
 
 	_setupListeners: function() {
-		window.addEventListener('scroll', () => {
-			var elCoord = this._getMeasures();
-			if (elCoord.top > -this._initialOffset && elCoord.top <= window.innerHeight) {
-				if (!this._initialTop) {
-					console.log('initial top set');
-					this._initialTop = elCoord.top;
-				}
-				this._translate(Math.max(0, elCoord.top * (this._initialOffset / this._initialTop / this._rate)));
-			}
-		});
+		window.addEventListener('scroll', this._managePosition.bind(this));
 	},
 
 	init: function(customOptions) {
 		var defaultOptions = {
-			initialOffset: 200,
-			rate: 1
+			initialOffset: 200
 		};
 
 		var options = Object.assign({}, defaultOptions, customOptions);
@@ -42,7 +48,9 @@ var Parallax = {
 		}
 
 		Object.keys(options).forEach((key) => {
-			this['_' + key] = options[key];
+			if (['el', 'selector', 'initialOffset'].includes(key)) {
+				this['_' + key] = options[key];
+			}
 		});
 
 		if (!this._el) {
@@ -54,9 +62,7 @@ var Parallax = {
 		}
 
 		this._adjustInitialOffset();
-
-		this._translate(this._initialOffset);
-
+		this._managePosition();
 		this._setupListeners();
 
 		return this;
@@ -67,6 +73,5 @@ var Parallax = {
 	Object.create(Parallax).init({
 		el: imgEl,
 		initialOffset: 200 + Math.random() * 50,
-		//rate: 1 + Math.random() * Math.random()
 	});
 });
