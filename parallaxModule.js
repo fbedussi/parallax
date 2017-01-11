@@ -129,16 +129,16 @@ export default function createParallax(options) {
 	var parallaxObjects = [];
 	var elements = [];
 
-	if (Object.getPrototypeOf(options.el).constructor === NodeList) { 
+	if (typeof options.el === 'object' && Object.getPrototypeOf(options.el).constructor === NodeList) {
 		//options.el is a NodeList collection, e.g. the result of a querySelectorAll
 		elements = [].slice.call(options.el);
-	} else if (Object.getPrototypeOf(options.el).constructor === String) {
+	} else if (typeof options.el === 'string') {
 		//options.el is a string that is treated as a css selector
 		elements = [].slice.call(document.querySelectorAll(options.el));
 	} else if (options.el.jquery) {
 		//options.el is a jquery object
 		elements = options.el.toArray();
-	} else if (Object.getPrototypeOf(options.el.constructor) === HTMLElement) {
+	} else if (typeof options.el === 'object' && Object.getPrototypeOf(options.el.constructor) === HTMLElement) {
 		//options.el is an HTMLElement, e.g. the result of a querySelector
 		elements = [options.el];
 	}
