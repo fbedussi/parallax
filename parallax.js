@@ -27,7 +27,7 @@ var Parallax = {
 				fn();
 				prevTime = now;
 			}
-		}
+		};
 	},
 
 	_translate: function(y) {
@@ -140,7 +140,7 @@ function createParallax(options) {
 		elements = options.el.toArray();
 	} else if (Object.getPrototypeOf(options.el.constructor) === HTMLElement) {
 		//options.el is an HTMLElement, e.g. the result of a querySelector
-		elements = [options.el]
+		elements = [options.el];
 	}
 
 	elements.forEach(el => {
