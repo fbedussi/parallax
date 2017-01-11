@@ -3,16 +3,16 @@
 ## Use
 Download `parallax.js` and include it in your project. If you use ES6 module you can use `parallaxModule.js` instead.
 
-To enable the parallax effect for an element just call
+To enable the parallax effect for an element just call:
 ````
 createParallax(options);
 ````
-this function returns an array of the objects created
+This function returns an array of the objects created.
 
 ## Options
 | name | type | default value | meaning |
 |------|------|---------------|---------|
-| el | string/nodeList/HTMLElement/jQuery object | none | the element(s) on which the parallax effect will be enabled |
+| el | string, nodeList, HTMLElement, jQuery object | none | the element(s) on which the parallax effect will be enabled |
 | initialOffset | int | 50 | the initial vertical offset (in px) that the element has when it enters the viewport |
 | randomizeInitialOffset | bool | true | if true a random amount from 0 to value of initialOffset is added to initialOffset itself |
 | topMargin | int | 0 | the distance form the viewport top where the element must reach its original position |
