@@ -129,17 +129,18 @@ function createParallax(options) {
 	var parallaxObjects = [];
 	var elements = [];
 
-	switch (Object.getPrototypeOf(options.el).constructor) {
-		case NodeList:
-			elements = [].slice.call(options.el);
-			break;
-		case String:
-			elements = [].slice.call(document.querySelectorAll(options.el));
-			break;
-		default:
-			if (options.el.jquery) {
-				elements = options.el.toArray();
-			}
+	if (Object.getPrototypeOf(options.el).constructor === NodeList) { 
+		//options.el is a NodeList collection, e.g. the result of a querySelectorAll
+		elements = [].slice.call(options.el);
+	} else if (Object.getPrototypeOf(options.el).constructor === String) {
+		//options.el is a string that is treated as a css selector
+		elements = [].slice.call(document.querySelectorAll(options.el));
+	} else if (options.el.jquery) {
+		//options.el is a jquery object
+		elements = options.el.toArray();
+	} else if (Object.getPrototypeOf(options.el.constructor) === HTMLElement) {
+		//options.el is an HTMLElement, e.g. the result of a querySelector
+		elements = [options.el]
 	}
 
 	elements.forEach(el => {
@@ -149,5 +150,3 @@ function createParallax(options) {
 
 	return parallaxObjects;
 }
-
-createParallax({el: '.parallax'});
