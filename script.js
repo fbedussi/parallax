@@ -1,77 +1,153 @@
 var Parallax = {
+	_currentOffset: null,
+
 	_getMeasures: function() {
 		return this._el.getBoundingClientRect();
 	},
 
+	/**
+	 * @desc reduces initialOffset for element too close to the document end
+	 * @returns {}
+	 */
 	_adjustInitialOffset: function() {
-		//Reduce initialOffset if the element is too close to the document end
-		var maxScroll = document.body.clientHeight - this._el.offsetTop - this._initialOffset - this._el.clientHeight;
-		if (maxScroll < window.innerHeight) {
-			this._initialOffset = Math.max(0, Math.floor(this._initialOffset * maxScroll / window.innerHeight));
+		var elCoord = this._getMeasures();
+		var maxScroll = document.body.clientHeight - (this._scrollingElement.scrollTop + elCoord.top + elCoord.height) - this._initialOffset;
+		if (maxScroll < (window.innerHeight - this._topMargin)) {
+			this._initialOffset = Math.max(0, this._initialOffset * maxScroll / window.innerHeight);
+			return;
+		}
+	},
+	
+	_trottle: function(fn, interval) {
+		var prevTime = Date.now();
+		
+		return function() {
+			var now = Date.now();
+			if (now - prevTime > interval) {
+				fn();
+				prevTime = now;
+			}
 		}
 	},
 
-	_applyTranslate: function(y) {
+	_translate: function(y) {
+		if (y === this._currentOffset) {
+			return;
+		}
+		this._currentOffset = y;
 		this._el.style.transform = `translateY(${y}px)`;
 	},
-	
-	_managePosition: function() {
+
+	_manageOffset: function() {
 		var elCoord = this._getMeasures();
-		
-		if (elCoord.top < 0) {
+
+		if (elCoord.top <= window.innerHeight) {
+			//the offset goes from the initial value to 0 in the space from initial position and top margin
+			let newOffset = Math.max(0, (this._initialOffset * (elCoord.top - this._topMargin)) / ((this._initialTop - this._topMargin) * this._speed));
+
+			//if yoyo is enabled or the new offset is < than the old one move the element
+			if (this._yoyo || newOffset < this._currentOffset) {
+				this._translate(newOffset);
+			}
+
 			return;
 		}
-		
-		if (elCoord.top > window.innerHeight) {
-			this._applyTranslate(this._initialOffset);
-			return;
+
+		//the element is below the viewport and is should reset
+		if (!this._yoyo && this._resetAtScrollDown && this._currentOffset !== this._initialOffset) {
+			this._translate(this._initialOffset);
 		}
-		
-		//if (elCoord.top >= 0 && elCoord.top <= window.innerHeight) 
-		var newOffset = Math.floor(this._initialOffset * elCoord.top / (window.innerHeight - this._initialOffset));
-		this._applyTranslate(Math.max(0, Math.min(this._initialOffset, newOffset)));
 	},
 
 	_setupListeners: function() {
-		window.addEventListener('scroll', this._managePosition.bind(this));
+		window.addEventListener('scroll', this._trottle(this._manageOffset.bind(this), this._trottleInterval));
 	},
 
 	init: function(customOptions) {
 		var defaultOptions = {
-			initialOffset: 200
+			initialOffset: 50,
+			randomizeInitialOffset: true,
+			randomizeSpeed: true,
+			transitionDuration: '0.4s',
+			trottleInterval: 100,
+			topMargin: 200,
+			yoyo: true, //true: the element moves down when scrolling up | false: the element move only upwards
+			resetAtScrollDown: true, //reset the offset to initial value when the element exits the viewport from the bottom (e.g. when scrolling up)
+			speed: 1
 		};
 
 		var options = Object.assign({}, defaultOptions, customOptions);
 
-		if (!(options.selector || options.el)) {
-			throw new Error('Parallax needs a CSS selector or an HTML element!');
+		if (!(options.el)) {
+			throw new Error('Parallax needs an HTML element!');
 		}
 
-		Object.keys(options).forEach((key) => {
-			if (['el', 'selector', 'initialOffset'].includes(key)) {
-				this['_' + key] = options[key];
-			}
+		if (options.randomizeInitialOffset) {
+			options.initialOffset += Math.random() * options.initialOffset;
+		}
+
+		if (options.randomizeSpeed) {
+			options.speed += Math.random();
+		}
+
+		['el',
+			'initialOffset',
+			'speed',
+			'transitionDuration',
+			'trottleInterval',
+			'topMargin',
+			'resetAtScrollDown',
+			'yoyo'].forEach((key) => {
+			this['_' + key] = options[key];
 		});
 
 		if (!this._el) {
-			this._el = document.querySelector(this._selector);
+			throw new Error('Parallax didn\'t find any element!');
 		}
 
-		if (!this._el) {
-			throw new Error('Parallax did\'t find any element!');
+		if (this._el.style.transition === '') {
+			this._el.style.transition = 'transform ' + this._transitionDuration;
 		}
+
+		this._scrollingElement = document.scrollingElement || document.documentElement;
 
 		this._adjustInitialOffset();
-		this._managePosition();
+		this._initialTop = Math.min(window.innerHeight, this._getMeasures().top + this._initialOffset + this._scrollingElement.scrollTop);
+		this._translate(this._initialOffset);
+
 		this._setupListeners();
 
 		return this;
 	}
 };
 
-[].forEach.call(document.querySelectorAll('.parallax'), function(imgEl) {
-	Object.create(Parallax).init({
-		el: imgEl,
-		initialOffset: 200 + Math.random() * 50,
+/**
+ * @desc initialize the parallax effect on an element
+ * @param {} options
+ **/
+function createParallax(options) {
+	var parallaxObjects = [];
+	var elements = [];
+
+	switch (Object.getPrototypeOf(options.el).constructor) {
+		case NodeList:
+			elements = [].slice.call(options.el);
+			break;
+		case String:
+			elements = [].slice.call(document.querySelectorAll(options.el));
+			break;
+		default:
+			if (options.el.jquery) {
+				elements = options.el.toArray();
+			}
+	}
+
+	elements.forEach(el => {
+		options.el = el;
+		parallaxObjects.push(Object.create(Parallax).init(options));
 	});
-});
+
+	return parallaxObjects;
+}
+
+createParallax({el: '.parallax'});
